@@ -1,11 +1,9 @@
 const form = document.querySelector('#character-form');
 const input = document.querySelector('#character-input');
 const status = document.querySelector('#status');
-const stage = document.querySelector('#character-stage');
-const steps = document.querySelector('#stroke-steps');
-const practice = document.querySelector('#practice-grid');
-const pinyinInput = document.querySelector('#pinyin-input');
-let writer;
+const content = document.querySelector('#content');
+const template = document.querySelector('#character-template');
+const writers = [];
 let loadSequence = 0;
 
 const svgNS = 'http://www.w3.org/2000/svg';
@@ -20,9 +18,7 @@ function makeCharacterSvg(strokes, mode, current = strokes.length - 1) {
   const group = svgElement('g', { transform: HanziWriter.getScalingTransform(100, 100, 5).transform });
   strokes.forEach((stroke, index) => {
     if (mode === 'step' && index > current) return;
-    let fill = '#274b46';
-    if (mode === 'step') fill = index === current ? '#c16d3f' : '#a6b5af';
-    if (mode === 'trace') fill = '#d8e1db';
+    const fill = mode === 'trace' ? '#d8e1db' : '#2d655f';
     group.append(svgElement('path', { d: stroke, fill }));
   });
   svg.append(group);
@@ -31,78 +27,118 @@ function makeCharacterSvg(strokes, mode, current = strokes.length - 1) {
 
 function makeGridCell(className, svg) {
   const cell = document.createElement('div');
-  cell.className = `grid ${className}`;
+  cell.className = 'grid ' + className;
   if (svg) cell.append(svg);
   return cell;
 }
 
-function setStatus(message) { status.textContent = message; }
-
-function updatePinyin(value) {
-  document.querySelector('#display-pinyin').textContent = value || '—';
-  document.querySelector('#sheet-pinyin').textContent = value || '—';
+function parseCharacters(value) {
+  const characters = Array.from(value.trim());
+  if (characters.length < 1 || characters.length > 4 || characters.some(char => !/^\p{Script=Han}$/u.test(char))) {
+    throw new Error('请输入 1～4 个汉字');
+  }
+  return characters;
 }
 
-async function loadCharacter(char) {
+async function fetchCharacterData(char) {
+  let data;
+  if (char === '永') {
+    const response = await fetch('data/%E6%B0%B8.json');
+    if (response.ok) data = await response.json();
+  }
+  if (!data) {
+    const url = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/' + encodeURIComponent(char) + '.json';
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('没有找到“' + char + '”的笔顺资料');
+    data = await response.json();
+  }
+  if (!Array.isArray(data.strokes) || !data.strokes.length) throw new Error('没有找到“' + char + '”的笔顺资料');
+  return data;
+}
+
+function makeSheet(char, reading, data, index, total) {
+  const sheet = template.content.firstElementChild.cloneNode(true);
+  const setText = (selector, value) => { sheet.querySelector(selector).textContent = value; };
+  setText('.sheet-number', (index + 1) + ' / ' + total);
+  setText('.sheet-title-character', char);
+  setText('.sheet-title-pinyin', reading);
+  setText('.display-character', char);
+  setText('.display-pinyin', reading);
+  setText('.sheet-character', char);
+  setText('.sheet-pinyin', reading);
+  setText('.stroke-count', '共 ' + data.strokes.length + ' 画');
+  setText('.sheet-count', data.strokes.length + ' 画');
+
+  const pinyinInput = sheet.querySelector('.pinyin-input');
+  pinyinInput.value = reading;
+  pinyinInput.setAttribute('aria-label', '修改“' + char + '”的拼音');
+  pinyinInput.id = 'pinyin-' + index;
+  sheet.querySelector('.pinyin-label').htmlFor = pinyinInput.id;
+  pinyinInput.addEventListener('input', () => {
+    const value = pinyinInput.value.trim() || '—';
+    setText('.display-pinyin', value);
+    setText('.sheet-pinyin', value);
+    setText('.sheet-title-pinyin', value);
+  });
+
+  const stepNodes = data.strokes.map((_, strokeIndex) => {
+    const item = document.createElement('div');
+    item.className = 'step';
+    item.append(makeGridCell('step-square', makeCharacterSvg(data.strokes, 'step', strokeIndex)));
+    const caption = document.createElement('div');
+    caption.className = 'step-caption';
+    caption.innerHTML = '第 <strong>' + (strokeIndex + 1) + '</strong> 笔';
+    item.append(caption);
+    return item;
+  });
+  sheet.querySelector('.stroke-steps').replaceChildren(...stepNodes);
+
+  const practiceNodes = Array.from({ length: 8 }, (_, cellIndex) => {
+    const mode = cellIndex < 2 ? 'full' : cellIndex < 5 ? 'trace' : 'blank';
+    const svg = mode === 'blank' ? null : makeCharacterSvg(data.strokes, mode);
+    return makeGridCell('practice-cell', svg);
+  });
+  sheet.querySelector('.practice-grid').replaceChildren(...practiceNodes);
+  return sheet;
+}
+
+async function loadCharacters(value) {
+  const characters = parseCharacters(value);
   const sequence = ++loadSequence;
-  setStatus('正在准备字帖…');
+  status.textContent = '正在准备字帖…';
   form.querySelector('button').disabled = true;
   try {
     if (!window.HanziWriter || !window.pinyinPro) throw new Error('工具加载失败');
-    let data;
-    if (char === '永') {
-      const response = await fetch('data/%E6%B0%B8.json');
-      if (response.ok) data = await response.json();
-    }
-    if (!data) {
-      const response = await fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/${encodeURIComponent(char)}.json`);
-      if (!response.ok) throw new Error('没有找到这个字的笔顺资料');
-      data = await response.json();
-    }
+    const cache = new Map();
+    const dataList = await Promise.all(characters.map(char => {
+      if (!cache.has(char)) cache.set(char, fetchCharacterData(char));
+      return cache.get(char);
+    }));
     if (sequence !== loadSequence) return;
-    if (!Array.isArray(data.strokes) || !data.strokes.length) throw new Error('没有找到这个字的笔顺资料');
-
-    const reading = pinyinPro.pinyin(char);
-    pinyinInput.value = reading;
-    updatePinyin(reading);
-    document.querySelector('#display-character').textContent = char;
-    document.querySelector('#sheet-character').textContent = char;
-    document.querySelector('#stroke-count').textContent = `共 ${data.strokes.length} 画`;
-    document.querySelector('#sheet-count').textContent = `${data.strokes.length} 画`;
-
-    stage.replaceChildren();
-    const stageSize = stage.clientWidth - 4;
-    writer = HanziWriter.create(stage, char, {
-      width: stageSize, height: stageSize, padding: Math.round(stageSize * 0.07),
-      strokeColor: '#2d655f', outlineColor: '#dce7df',
-      showOutline: true, showCharacter: false,
-      strokeAnimationSpeed: 1.3, delayBetweenStrokes: 360,
-      charDataLoader: () => data
+    const readings = pinyinPro.pinyin(characters.join(''), { type: 'array' });
+    const sheets = characters.map((char, index) => makeSheet(char, readings[index], dataList[index], index, characters.length));
+    content.replaceChildren(...sheets);
+    writers.length = 0;
+    sheets.forEach((sheet, index) => {
+      const stage = sheet.querySelector('.character-stage');
+      const stageSize = stage.clientWidth - 4;
+      const writer = HanziWriter.create(stage, characters[index], {
+        width: stageSize, height: stageSize, padding: Math.round(stageSize * 0.07),
+        strokeColor: '#2d655f', outlineColor: '#dce7df',
+        showOutline: true, showCharacter: false,
+        strokeAnimationSpeed: 1.3, delayBetweenStrokes: 360,
+        charDataLoader: () => dataList[index]
+      });
+      sheet.querySelector('.replay-button').addEventListener('click', () => writer.animateCharacter());
+      writers.push(writer);
+      writer.animateCharacter();
     });
-    writer.animateCharacter();
-
-    const stepNodes = data.strokes.map((_, index) => {
-      const item = document.createElement('div');
-      item.className = 'step';
-      item.append(makeGridCell('step-square', makeCharacterSvg(data.strokes, 'step', index)));
-      const caption = document.createElement('div');
-      caption.className = 'step-caption';
-      caption.innerHTML = `第 <strong>${index + 1}</strong> 笔`;
-      item.append(caption);
-      return item;
-    });
-    steps.replaceChildren(...stepNodes);
-
-    const practiceNodes = Array.from({ length: 8 }, (_, index) => {
-      const mode = index < 2 ? 'full' : index < 5 ? 'trace' : 'blank';
-      const svg = mode === 'blank' ? null : makeCharacterSvg(data.strokes, mode);
-      return makeGridCell('practice-cell', svg);
-    });
-    practice.replaceChildren(...practiceNodes);
-    setStatus('');
-    return { character: char, pinyin: reading, strokeCount: data.strokes.length };
+    status.textContent = '';
+    return characters.map((char, index) => ({
+      character: char, pinyin: readings[index], strokeCount: dataList[index].strokes.length
+    }));
   } catch (error) {
-    if (sequence === loadSequence) setStatus(`${error.message}。请检查汉字或稍后重试。`);
+    if (sequence === loadSequence) status.textContent = error.message + '。请检查汉字或稍后重试。';
   } finally {
     if (sequence === loadSequence) form.querySelector('button').disabled = false;
   }
@@ -110,38 +146,39 @@ async function loadCharacter(char) {
 
 form.addEventListener('submit', event => {
   event.preventDefault();
-  const characters = Array.from(input.value.trim());
-  if (characters.length !== 1 || !/\p{Script=Han}/u.test(characters[0])) {
-    setStatus('请只输入一个汉字。');
+  try {
+    parseCharacters(input.value);
+    loadCharacters(input.value);
+  } catch (error) {
+    status.textContent = error.message + '。';
     input.focus();
-    return;
   }
-  loadCharacter(characters[0]);
 });
 
-pinyinInput.addEventListener('input', () => updatePinyin(pinyinInput.value.trim()));
-document.querySelector('#replay-button').addEventListener('click', () => writer?.animateCharacter());
-document.querySelector('#print-button').addEventListener('click', () => window.print());
+document.querySelector('#print-button').addEventListener('click', async () => {
+  await Promise.all(writers.map(writer => writer.showCharacter()));
+  window.print();
+});
+
 if (document.modelContext?.registerTool) {
   Promise.resolve(document.modelContext.registerTool({
     name: 'generate_hanzi_copybook',
     title: '生成汉字字帖',
-    description: '为一个汉字生成拼音、逐笔笔顺和田字格练习。',
+    description: '为 1～4 个汉字生成每个字的拼音、逐笔笔顺和田字格练习。',
     inputSchema: {
       type: 'object',
-      properties: { character: { type: 'string', description: '一个汉字' } },
-      required: ['character'], additionalProperties: false
+      properties: { characters: { type: 'string', description: '1～4 个汉字' } },
+      required: ['characters'], additionalProperties: false
     },
     annotations: { readOnlyHint: false, untrustedContentHint: false },
-    async execute({ character }) {
-      if (typeof character !== 'string' || Array.from(character).length !== 1 || !/^\p{Script=Han}$/u.test(character)) {
-        throw new Error('请只输入一个汉字。');
-      }
-      input.value = character;
-      const result = await loadCharacter(character);
+    async execute({ characters }) {
+      if (typeof characters !== 'string') throw new Error('请输入 1～4 个汉字。');
+      parseCharacters(characters);
+      input.value = characters.trim();
+      const result = await loadCharacters(characters);
       if (!result) throw new Error(status.textContent || '字帖生成失败');
-      return result;
+      return { characters: result };
     }
   })).catch(() => {});
 }
-loadCharacter('永');
+loadCharacters('永');
