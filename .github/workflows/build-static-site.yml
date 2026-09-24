@@ -1,0 +1,44 @@
+name: 构建静态网站压缩包
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: 检查网站文件
+        run: |
+          test -s dist/index.html
+          test -s dist/styles.css
+          test -s dist/app.js
+          test -s dist/vendor/hanzi-writer.min.js
+          test -s dist/vendor/pinyin-pro.js
+          test -s dist/data/永.json
+          node --check dist/app.js
+
+      - name: 构建静态网站压缩包
+        run: |
+          cd dist
+          zip -qr ../zitie-static.zip .
+          cd ..
+          unzip -t zitie-static.zip | tail -n 1
+          sha256sum zitie-static.zip >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 上传压缩包
+        uses: actions/upload-artifact@v7
+        with:
+          path: zitie-static.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 30
