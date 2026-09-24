@@ -19,19 +19,17 @@ jobs:
 
       - name: 检查网站文件
         run: |
-          test -s dist/index.html
-          test -s dist/styles.css
-          test -s dist/app.js
-          test -s dist/vendor/hanzi-writer.min.js
-          test -s dist/vendor/pinyin-pro.js
-          test -s dist/data/永.json
-          node --check dist/app.js
+          test -s index.html
+          test -s styles.css
+          test -s app.js
+          test -s vendor/hanzi-writer.min.js
+          test -s vendor/pinyin-pro.js
+          test -s data/永.json
+          node --check app.js
 
       - name: 构建静态网站压缩包
         run: |
-          cd dist
-          zip -qr ../zitie-static.zip .
-          cd ..
+          zip -qr zitie-static.zip index.html styles.css app.js vendor data licenses
           unzip -t zitie-static.zip | tail -n 1
           sha256sum zitie-static.zip >> "$GITHUB_STEP_SUMMARY"
 

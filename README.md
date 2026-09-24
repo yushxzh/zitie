@@ -1,9 +1,39 @@
 # 小字帖
 
-输入 1～4 个汉字，生成每个字的拼音、逐笔笔顺和田字格练习。网站是纯静态文件，笔顺数据已放在 dist/data/，运行时无需后端服务。
+小字帖是一个面向初学写字儿童的静态网站。输入 1～4 个汉字，即可查看每个字的拼音、笔顺动画、逐笔字形和田字格练习；支持手机浏览与打印。
 
-## 1Panel 部署
+本仓库公开，网站源文件直接放在仓库根目录。运行时不需要后端、数据库或 Node.js。拼音库、笔顺库和字形数据均随网站文件提供。
 
-在 1Panel 中创建静态网站，将 GitHub Actions 生成的 zitie-static.zip 解压到网站根目录。压缩包根目录即为 index.html，不需要执行安装或构建命令。
+## 功能
 
-每次推送到 main 或手动运行“构建静态网站压缩包”工作流，GitHub Actions 都会生成新的压缩包，并在对应运行的产物中提供下载。
+- 每次生成 1～4 个汉字的字帖，每个字独立展示。
+- 按笔顺逐步显示字形；已写过的笔画保持相同颜色。
+- 提供完整字、浅色描红和空白田字格。
+- 自动生成拼音，并允许手动修改多音字读音。
+- 支持手机屏幕和打印。
+
+## 目录
+
+| 路径 | 用途 |
+| --- | --- |
+| `index.html`、`styles.css`、`app.js` | 页面、样式和交互 |
+| `vendor/` | 随站点提供的 Hanzi Writer 与 pinyin-pro |
+| `data/` | 按汉字拆分的本地笔顺数据 |
+| `licenses/` | 第三方资源的许可文件 |
+| `.github/workflows/build-static-site.yml` | 构建并上传静态网站压缩包 |
+
+## 构建与部署
+
+每次推送到 `main`，GitHub Actions 会检查网站文件，生成 `zitie-static.zip`，并将压缩包放在该次工作流的产物中。也可以在 Actions 页面手动运行「构建静态网站压缩包」。产物保留 30 天。
+
+使用 1Panel 部署时：
+
+1. 从 [Actions 运行记录](https://github.com/yushxzh/zitie/actions/workflows/build-static-site.yml)下载最新的 `zitie-static.zip`。
+2. 在 1Panel 中创建静态网站，设置域名。
+3. 将压缩包解压到网站根目录，确认根目录下直接包含 `index.html`，再配置 DNS 和 HTTPS。
+
+网站无需安装依赖或在服务器上执行构建命令。也可以在仓库根目录运行 `python3 -m http.server 8000` 进行本地预览。
+
+## 数据与限制
+
+笔顺资料来自 Hanzi Writer Data。缺少笔顺资料的汉字会显示提示；多音字的自动拼音可在页面中修改。第三方许可见 `licenses/`。
