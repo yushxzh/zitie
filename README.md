@@ -20,15 +20,20 @@
 | `vendor/` | 随站点提供的 Hanzi Writer 与 pinyin-pro |
 | `data/` | 按汉字拆分的本地笔顺数据 |
 | `licenses/` | 第三方资源的许可文件 |
-| `.github/workflows/build-static-site.yml` | 构建并上传静态网站压缩包 |
+| `.github/workflows/build-static-site.yml` | 构建静态网站压缩包并发布 GitHub Release |
 
 ## 构建与部署
 
-每次推送到 `main`，GitHub Actions 会检查网站文件，生成 `zitie-static.zip`，并将压缩包放在该次工作流的产物中。也可以在 Actions 页面手动运行「构建静态网站压缩包」。产物保留 30 天。
+每次推送到 `main`，GitHub Actions 会检查网站文件，生成 `zitie-static.zip`，并上传到新的 [GitHub Release](https://github.com/yushxzh/zitie/releases/latest)。也可以在 Actions 页面手动运行「构建静态网站压缩包」。Actions 页面中的构建产物保留 30 天；服务器可从最新 Release 下载压缩包，无需安装 GitHub CLI 或登录 GitHub：
+
+```bash
+curl -fL https://github.com/yushxzh/zitie/releases/latest/download/zitie-static.zip -o zitie-static.zip
+unzip -t zitie-static.zip
+```
 
 使用 1Panel 部署时：
 
-1. 从 [Actions 运行记录](https://github.com/yushxzh/zitie/actions/workflows/build-static-site.yml)下载最新的 `zitie-static.zip`。
+1. 从最新 Release 下载 `zitie-static.zip`。
 2. 在 1Panel 中创建静态网站，设置域名。
 3. 将压缩包解压到网站根目录，确认根目录下直接包含 `index.html`，再配置 DNS 和 HTTPS。
 

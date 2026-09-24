@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   package:
@@ -40,3 +40,13 @@ jobs:
           archive: false
           if-no-files-found: error
           retention-days: 30
+
+      - name: 发布 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" zitie-static.zip \
+            --target "$GITHUB_SHA" \
+            --title "小字帖构建 ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" \
+            --notes "由 GitHub Actions 构建，源码提交：${GITHUB_SHA}" \
+            --latest
