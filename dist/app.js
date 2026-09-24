@@ -41,17 +41,9 @@ function parseCharacters(value) {
 }
 
 async function fetchCharacterData(char) {
-  let data;
-  if (char === '永') {
-    const response = await fetch('data/%E6%B0%B8.json');
-    if (response.ok) data = await response.json();
-  }
-  if (!data) {
-    const url = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/' + encodeURIComponent(char) + '.json';
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('没有找到“' + char + '”的笔顺资料');
-    data = await response.json();
-  }
+  const response = await fetch('data/' + encodeURIComponent(char) + '.json');
+  if (!response.ok) throw new Error('没有找到“' + char + '”的笔顺资料');
+  const data = await response.json();
   if (!Array.isArray(data.strokes) || !data.strokes.length) throw new Error('没有找到“' + char + '”的笔顺资料');
   return data;
 }
