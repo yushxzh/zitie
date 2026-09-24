@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f3ea">
+  <meta name="description" content="输入一个汉字，查看拼音和笔顺，生成适合小朋友的田字格字帖。">
+  <title>小字帖 · 一笔一画学写字</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%232d655f'/%3E%3Cpath d='M12 32h40M32 12v40' stroke='%23a7d4c3' stroke-width='2' stroke-dasharray='4 3'/%3E%3Ctext x='32' y='47' text-anchor='middle' fill='white' font-family='serif' font-size='42'%3E字%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="vendor/hanzi-writer.min.js"></script>
+  <script defer src="vendor/pinyin-pro.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true">字</div>
+      <div class="brand-copy"><strong>小字帖</strong><span>一笔一画，慢慢写好</span></div>
+      <button id="print-button" class="print-button" type="button" aria-label="打印字帖">打印字帖</button>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <div class="intro-copy">
+        <span class="eyebrow">写字练习 · 每次学一个字</span>
+        <h1 id="page-title">今天写什么字？</h1>
+        <p>输入一个汉字，看看它怎么写，再跟着田字格练一练。</p>
+      </div>
+      <form id="character-form" class="search" autocomplete="off">
+        <label for="character-input">输入汉字</label>
+        <div class="search-row">
+          <input id="character-input" name="character" value="永" inputmode="text" maxlength="2" aria-describedby="input-hint" required>
+          <button type="submit">生成字帖</button>
+        </div>
+        <p id="input-hint" class="hint">一次输入一个汉字</p>
+      </form>
+    </section>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <div id="content" class="content">
+      <section class="lesson-card" aria-labelledby="lesson-heading">
+        <div class="section-head">
+          <div><span class="section-index">01 / 认识这个字</span><h2 id="lesson-heading">先看一看</h2></div>
+          <span id="stroke-count" class="stroke-count"></span>
+        </div>
+        <div class="lesson-body">
+          <div class="hero-character">
+            <div class="character-stage grid" id="character-stage" aria-label="汉字笔顺演示"></div>
+            <button id="replay-button" class="replay-button" type="button">▶ 再看一遍笔顺</button>
+          </div>
+          <div class="lesson-details">
+            <span class="small-label">这个字读作</span>
+            <div class="reading"><span id="display-character" class="display-character"></span><span id="display-pinyin" class="display-pinyin"></span></div>
+            <label for="pinyin-input" class="pinyin-label">拼音可以修改 <span>多音字请按要学的读音填写</span></label>
+            <input id="pinyin-input" class="pinyin-input" type="text" maxlength="24" spellcheck="false" aria-label="修改拼音">
+            <p class="detail-tip">观察每一笔的起点和方向，再动手练习。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="steps-section" aria-labelledby="steps-heading">
+        <div class="section-head"><div><span class="section-index">02 / 按笔顺写</span><h2 id="steps-heading">一笔一笔，写成一个字</h2></div></div>
+        <div id="stroke-steps" class="stroke-steps"></div>
+      </section>
+
+      <section class="copybook-section" aria-labelledby="copybook-heading">
+        <div class="section-head"><div><span class="section-index">03 / 动手练习</span><h2 id="copybook-heading">照着描，再自己写</h2></div></div>
+        <div class="copybook-heading"><span id="sheet-character"></span><span id="sheet-pinyin"></span><span id="sheet-count"></span></div>
+        <div id="practice-grid" class="practice-grid"></div>
+        <p class="practice-note">前两格看字形，中间描红，最后自己写。打印后也能练习。</p>
+      </section>
+    </div>
+    <footer>一字一练 · 从认真写好每一笔开始</footer>
+  </main>
+</body>
+</html>
