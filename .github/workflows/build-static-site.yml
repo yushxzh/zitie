@@ -22,6 +22,8 @@ jobs:
           test -s index.html
           test -s styles.css
           test -s app.js
+          test -s robots.txt
+          test -s sitemap.xml
           test -s vendor/hanzi-writer.min.js
           test -s vendor/pinyin-pro.js
           test -s data/永.json
@@ -29,7 +31,7 @@ jobs:
 
       - name: 构建静态网站压缩包
         run: |
-          zip -qr zitie-static.zip index.html styles.css app.js vendor data licenses
+          zip -qr zitie-static.zip index.html styles.css app.js robots.txt sitemap.xml vendor data licenses
           unzip -t zitie-static.zip | tail -n 1
           sha256sum zitie-static.zip >> "$GITHUB_STEP_SUMMARY"
 

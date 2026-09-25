@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zitie.ningboshuyu.com/sitemap.xml

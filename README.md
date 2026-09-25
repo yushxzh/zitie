@@ -20,6 +20,7 @@
 | `vendor/` | 随站点提供的 Hanzi Writer 与 pinyin-pro |
 | `data/` | 按汉字拆分的本地笔顺数据 |
 | `licenses/` | 第三方资源的许可文件 |
+| `robots.txt`、`sitemap.xml` | 搜索引擎抓取规则和首页站点地图 |
 | `.github/workflows/build-static-site.yml` | 构建静态网站压缩包并发布 GitHub Release |
 
 ## 构建与部署
@@ -38,6 +39,12 @@ unzip -t zitie-static.zip
 3. 将压缩包解压到网站根目录，确认根目录下直接包含 `index.html`，再配置 DNS 和 HTTPS。
 
 网站无需安装依赖或在服务器上执行构建命令。也可以在仓库根目录运行 `python3 -m http.server 8000` 进行本地预览。
+
+## 搜索引擎收录
+
+部署后检查 `https://zitie.ningboshuyu.com/robots.txt` 和 `https://zitie.ningboshuyu.com/sitemap.xml` 能正常访问。站点地图只列出可独立访问的首页；输入不同汉字生成的内容仍在同一页面内，不会产生新的可收录网址。
+
+可以在 Google Search Console、Bing Webmaster Tools 或百度搜索资源平台验证站点所有权并提交 `sitemap.xml`。提交后可使用各平台的网址检查功能查看抓取与收录状态；站点地图和提交请求都不能保证立即收录。
 
 ## 数据与限制
 
